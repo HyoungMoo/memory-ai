@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>대화</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: #FFF8EE;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      color: #3B2F2F;
+      font-size: 18px;
+    }
+
+    /* ── 헤더 ── */
+    header {
+      background: white;
+      border-bottom: 2px solid #F0E6D8;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .back-link {
+      font-size: 2rem;
+      color: #8C7B6B;
+      text-decoration: none;
+      line-height: 1;
+      padding: 8px;
+      min-width: 48px;
+      text-align: center;
+    }
+    .header-info { flex: 1; }
+    .header-name { font-size: 1.4rem; font-weight: 700; color: #3B2F2F; }
+    .header-mode { font-size: 1.05rem; color: #B0A090; margin-top: 4px; }
+
+    /* ── 세션 배너 ── */
+    #sessionBanner {
+      display: none;
+      background: #EEF7EE;
+      border-bottom: 2px solid #C8E6C9;
+      padding: 12px 18px;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    #sessionBanner.show { display: flex; }
+    .banner-icon { font-size: 1.5rem; }
+    .banner-text { flex: 1; font-size: 1.1rem; color: #2E7D32; font-weight: 500; }
+    .banner-end {
+      padding: 12px 20px;
+      border: 2px solid #81C784;
+      background: white;
+      color: #2E7D32;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 1.05rem;
+      font-weight: 600;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+
+    /* ── 채팅 영역 ── */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* 날짜 구분 */
+    .date-divider {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #B0A090;
+      margin: 8px 0;
+    }
+
+    /* AI 행 */
+    .ai-row { display: flex; align-items: flex-end; gap: 10px; }
+    .ai-face {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #FFD54F, #FF8A65);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; flex-shrink: 0;
+    }
+
+    /* 말풍선 */
+    .bubble-wrap { display: flex; flex-direction: column; gap: 4px; max-width: 78%; }
+    .bubble-wrap.user { align-self: flex-end; align-items: flex-end; }
+    .bubble-wrap.bot  { align-self: flex-start; align-items: flex-start; }
+
+    .bubble {
+      padding: 18px 22px;
+      line-height: 1.8;
+      font-size: 1.2rem;
+      word-break: keep-all;
+    }
+    .bubble.user {
+      background: #D4875A;
+      color: white;
+      border-radius: 20px 20px 4px 20px;
+    }
+    .bubble.bot {
+      background: white;
+      color: #3B2F2F;
+      border-radius: 20px 20px 20px 4px;
+      border: 1.5px solid #F0E6D8;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .bubble-time {
+      font-size: 0.78rem;
+      color: #C0B0A0;
+    }
+
+    /* 감정 배지 */
+    .emo-badge {
+      align-self: flex-end;
+      font-size: 0.82rem;
+      padding: 4px 11px;
+      border-radius: 20px;
+      font-weight: 500;
+    }
+    .emo-행복 { background:#FEF3C7; color:#92400E; }
+    .emo-슬픔 { background:#DBEAFE; color:#1E40AF; }
+    .emo-그리움 { background:#EDE9FE; color:#5B21B6; }
+    .emo-불안 { background:#FEE2E2; color:#991B1B; }
+    .emo-평온 { background:#D1FAE5; color:#065F46; }
+    .emo-설렘 { background:#FCE7F3; color:#9D174D; }
+
+    /* 이미지 */
+    .chat-img { max-width: 220px; border-radius: 14px; box-shadow: 0 3px 12px rgba(0,0,0,0.1); display: block; }
+
+    /* 타이핑 */
+    .typing-wrap { display: flex; align-items: flex-end; gap: 10px; }
+    .typing-dots { background: white; border: 1.5px solid #F0E6D8; border-radius: 20px 20px 20px 4px; padding: 14px 18px; display: flex; gap: 5px; }
+    .typing-dots span {
+      width: 8px; height: 8px; background: #C0B0A0; border-radius: 50%;
+      animation: dotBounce 1s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: .18s; }
+    .typing-dots span:nth-child(3) { animation-delay: .36s; }
+    @keyframes dotBounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+    /* ── 기억 테스트 카드 ── */
+    .recall-card {
+      background: white;
+      border: 2px solid #FDD835;
+      border-radius: 18px;
+      padding: 22px 20px;
+      box-shadow: 0 2px 10px rgba(253,216,53,0.15);
+    }
+    .recall-tag {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #F57F17;
+      margin-bottom: 12px;
+    }
+    .recall-q {
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: #3B2F2F;
+      line-height: 1.7;
+      margin-bottom: 18px;
+    }
+    .recall-input {
+      width: 100%;
+      padding: 18px 18px;
+      font-size: 1.2rem;
+      font-family: 'Noto Sans KR', sans-serif;
+      border: 2px solid #E8DDD4;
+      border-radius: 14px;
+      outline: none;
+      margin-bottom: 12px;
+      transition: border-color .2s;
+    }
+    .recall-input:focus { border-color: #FDD835; }
+    .recall-confirm {
+      width: 100%;
+      padding: 18px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      font-family: 'Noto Sans KR', sans-serif;
+      background: #F57F17;
+      color: white;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+    }
+    .recall-result {
+      margin-top: 14px;
+      padding: 16px 18px;
+      border-radius: 14px;
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+    .recall-result.ok   { background: #D1FAE5; color: #065F46; }
+    .recall-result.fail { background: #FEE2E2; color: #991B1B; }
+
+    /* ── 하단 버튼 영역 ── */
+    .bottom-bar {
+      background: white;
+      border-top: 2px solid #F0E6D8;
+      padding: 14px 16px;
+      flex-shrink: 0;
+    }
+    /* 기능 버튼 행 */
+    .func-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .func-btn {
+      flex: 1;
+      padding: 16px 6px;
+      border: 2px solid #E8DDD4;
+      background: #FDFAF7;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: 'Noto Sans KR', sans-serif;
+      color: #5C4A3A;
+      transition: background .15s, border-color .15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 64px;
+      line-height: 1.3;
+    }
+    .func-btn:hover { background: #F5EDE0; border-color: #D4875A; color: #D4875A; }
+    .func-btn.active { background: #EEF7EE; border-color: #81C784; color: #2E7D32; }
+
+    /* 입력 행 */
+    .input-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .voice-btn {
+      width: 64px; height: 64px;
+      border: 2px solid #E8DDD4;
+      background: #FDFAF7;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.6rem;
+      flex-shrink: 0;
+      transition: background .15s;
+    }
+    .voice-btn:hover { background: #F5EDE0; }
+    .voice-btn.recording { background: #FEE2E2; border-color: #FCA5A5; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+
+    .msg-input {
+      flex: 1;
+      padding: 18px 20px;
+      font-size: 1.2rem;
+      font-family: 'Noto Sans KR', sans-serif;
+      border: 2px solid #E8DDD4;
+      border-radius: 32px;
+      outline: none;
+      color: #3B2F2F;
+      background: #FDFAF7;
+      transition: border-color .2s;
+    }
+    .msg-input:focus { border-color: #D4875A; }
+
+    .send-btn {
+      width: 64px; height: 64px;
+      border: none;
+      background: #D4875A;
+      color: white;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      transition: background .15s, transform .1s;
+    }
+    .send-btn:hover { background: #BE7048; transform: scale(1.05); }
+
+    /* ── 모달 (세션 선택) ── */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.4); z-index: 300;
+      justify-content: center; align-items: flex-end;
+    }
+    .overlay.open { display: flex; }
+    .sheet {
+      background: white;
+      width: 100%; max-width: 520px;
+      border-radius: 24px 24px 0 0;
+      padding: 20px 20px 36px;
+      animation: slideUp .22s ease;
+    }
+    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    .sheet-handle {
+      width: 44px; height: 5px; background: #E8DDD4;
+      border-radius: 3px; margin: 0 auto 22px;
+    }
+    .sheet-title {
+      font-size: 1.4rem; font-weight: 700; color: #3B2F2F; margin-bottom: 18px;
+    }
+    .cat-btn {
+      display: flex; align-items: center; gap: 16px;
+      width: 100%;
+      padding: 22px 20px;
+      border: 2px solid #F0E6D8;
+      background: white;
+      border-radius: 16px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: all .15s;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+    .cat-btn:hover { border-color: #D4875A; background: #FFF3EC; }
+    .cat-icon { font-size: 2.2rem; flex-shrink: 0; }
+    .cat-text { flex: 1; }
+    .cat-name { font-size: 1.2rem; font-weight: 600; color: #3B2F2F; }
+    .cat-desc { font-size: 1rem; color: #8C7B6B; margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="back-link" href="/">‹</a>
+  <div class="header-info">
+    <div class="header-name" id="headerName">대화</div>
+    <div class="header-mode" id="headerMode">자유 대화</div>
+  </div>
+</header>
+
+<div id="sessionBanner">
+  <span class="banner-icon">📌</span>
+  <span class="banner-text">오늘 주제: <strong id="sessionLabel"></strong></span>
+  <button class="banner-end" onclick="endSession()">마치기</button>
+</div>
+
+<div class="chat-area" id="chatArea"></div>
+
+<div class="bottom-bar">
+  <div class="func-row">
+    <button class="func-btn" onclick="openSessionSheet()"><span>📚</span>회상 주제</button>
+    <button class="func-btn" onclick="startRecallTest()"><span>🧠</span>기억 테스트</button>
+    <button class="func-btn" onclick="goReport()"><span>📊</span>주간 리포트</button>
+  </div>
+  <div class="input-row">
+    <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">🎤</button>
+    <input class="msg-input" id="msgInput" placeholder="말씀하고 싶은 것을 적어 주세요"
+           onkeydown="if(event.key==='Enter') sendMessage()">
+    <button class="send-btn" onclick="sendMessage()">▶</button>
+  </div>
+</div>
+
+<!-- 세션 선택 시트 -->
+<div class="overlay" id="sessionSheet" onclick="if(event.target===this)closeSheet()">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">오늘은 어떤 이야기를 나눌까요?</div>
+    <div id="catList"></div>
+  </div>
+</div>
+
+<script>
+const params   = new URLSearchParams(location.search);
+const userId   = params.get('user_id');
+const userName = params.get('name') || '어르신';
+let activeTestId = null;
+
+document.getElementById('headerName').textContent = userName + '님';
+
+const CAT_ICONS = { childhood:'🌱', school:'📖', career:'💼', family:'👨‍👩‍👧‍👦', recent:'☀️' };
+const CAT_DESC  = {
+  childhood: '태어나서 어린 시절 이야기',
+  school:    '학교 다니던 시절 이야기',
+  career:    '일하던 시절 이야기',
+  family:    '결혼, 자녀, 손자 이야기',
+  recent:    '요즘 생활, 건강, 취미',
+};
+
+function nowTime() {
+  return new Date().toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'});
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function scroll() {
+  const a = document.getElementById('chatArea');
+  a.scrollTop = a.scrollHeight;
+}
+
+// ── 메시지 추가 ──────────────────────────────
+function addMsg(role, text) {
+  const area = document.getElementById('chatArea');
+
+  if (role === 'bot') {
+    const row = document.createElement('div');
+    row.className = 'ai-row';
+    row.innerHTML = `
+      <div class="ai-face">🤖</div>
+      <div class="bubble-wrap bot">
+        <div class="bubble bot">${esc(text)}</div>
+        <span class="bubble-time">${nowTime()}</span>
+      </div>`;
+    area.appendChild(row);
+  } else {
+    const wrap = document.createElement('div');
+    wrap.className = 'bubble-wrap user';
+    wrap.innerHTML = `
+      <div class="bubble user">${esc(text)}</div>
+      <span class="bubble-time">${nowTime()}</span>`;
+    area.appendChild(wrap);
+  }
+  scroll();
+}
+
+function addEmoBadge(emotion) {
+  const area = document.getElementById('chatArea');
+  const b = document.createElement('span');
+  b.className = `emo-badge emo-${emotion}`;
+  b.textContent = `${emotion} 감정`;
+  area.appendChild(b);
+  scroll();
+}
+
+function addImage(src) {
+  const area = document.getElementById('chatArea');
+  const d = document.createElement('div');
+  d.style.cssText = 'margin-left:50px';
+  d.innerHTML = `<img src="${src}" class="chat-img" alt="관련 사진">`;
+  area.appendChild(d);
+  scroll();
+}
+
+function showTyping() {
+  const area = document.getElementById('chatArea');
+  const row = document.createElement('div');
+  row.className = 'typing-wrap'; row.id = 'typingRow';
+  row.innerHTML = `
+    <div class="ai-face">🤖</div>
+    <div class="typing-dots">
+      <span></span><span></span><span></span>
+    </div>`;
+  area.appendChild(row); scroll();
+}
+function hideTyping() { document.getElementById('typingRow')?.remove(); }
+
+// ── 채팅 전송 ────────────────────────────────
+async function sendMessage() {
+  const input = document.getElementById('msgInput');
+  const text  = input.value.trim();
+  if (!text) return;
+  addMsg('user', text);
+  input.value = '';
+  showTyping();
+
+  const res  = await fetch('/api/chat', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({message: text, user_id: userId})
+  });
+  hideTyping();
+  const data = await res.json();
+
+  if (data.emotion) addEmoBadge(data.emotion);
+  addMsg('bot', data.response || data.error);
+  if (data.image) addImage(data.image);
+  if (data.session) updateBanner(data.session);
+}
+
+// ── 세션 ─────────────────────────────────────
+function updateBanner(session) {
+  document.getElementById('sessionLabel').textContent = session.label;
+  document.getElementById('sessionBanner').classList.add('show');
+  document.getElementById('headerMode').textContent = '📌 ' + session.label;
+  document.querySelector('[onclick="openSessionSheet()"]').classList.add('active');
+}
+
+async function openSessionSheet() {
+  const res  = await fetch('/api/sessions/categories');
+  const cats = await res.json();
+  document.getElementById('catList').innerHTML = cats.map(c => `
+    <button class="cat-btn" onclick="selectCat('${c.key}', '${c.label}')">
+      <span class="cat-icon">${CAT_ICONS[c.key] || '💬'}</span>
+      <div class="cat-text">
+        <div class="cat-name">${c.label.split(' ')[0]}</div>
+        <div class="cat-desc">${CAT_DESC[c.key] || ''}</div>
+      </div>
+    </button>`).join('');
+  document.getElementById('sessionSheet').classList.add('open');
+}
+
+async function selectCat(key, label) {
+  closeSheet();
+  await fetch('/api/sessions/start', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userId, category: key})
+  });
+  const shortLabel = label.split(' ')[0];
+  updateBanner({label: shortLabel});
+  addMsg('bot', `좋아요! 오늘은 ${shortLabel} 이야기를 함께 해볼게요.\n편하게 떠오르는 것부터 말씀해 주세요 😊`);
+}
+
+async function endSession() {
+  await fetch('/api/sessions/end', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userId})
+  });
+  document.getElementById('sessionBanner').classList.remove('show');
+  document.getElementById('headerMode').textContent = '자유 대화';
+  document.querySelector('[onclick="openSessionSheet()"]').classList.remove('active');
+  addMsg('bot', '오늘 회상 세션을 마쳤어요. 이야기해 주셔서 감사해요 🌸');
+}
+
+function closeSheet() { document.getElementById('sessionSheet').classList.remove('open'); }
+
+// ── 기억 테스트 ───────────────────────────────
+async function startRecallTest() {
+  const res  = await fetch('/api/recall/question', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({user_id: userId})
+  });
+  const data = await res.json();
+  if (data.error) { addMsg('bot', data.error); return; }
+
+  activeTestId = data.test_id;
+  const area = document.getElementById('chatArea');
+  const card = document.createElement('div');
+  card.className = 'recall-card'; card.id = 'recallCard';
+  card.innerHTML = `
+    <div class="recall-tag">🧠 기억 테스트</div>
+    <div class="recall-q">${esc(data.question)}</div>
+    <input class="recall-input" id="recallInput"
+           placeholder="생각나시는 대로 천천히 적어 주세요"
+           onkeydown="if(event.key==='Enter') submitRecall()">
+    <button class="recall-confirm" onclick="submitRecall()">확인</button>
+    <div id="recallResult"></div>`;
+  area.appendChild(card); scroll();
+}
+
+async function submitRecall() {
+  const answer = document.getElementById('recallInput').value.trim();
+  if (!answer || !activeTestId) return;
+
+  const res  = await fetch('/api/recall/answer', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({test_id: activeTestId, answer})
+  });
+  const data = await res.json();
+
+  const rd = document.getElementById('recallResult');
+  rd.className = `recall-result ${data.success ? 'ok' : 'fail'}`;
+  rd.textContent = (data.success ? '✅ ' : '💡 ') + data.feedback;
+  document.getElementById('recallInput').disabled = true;
+  document.querySelector('#recallCard .recall-confirm').disabled = true;
+  activeTestId = null;
+}
+
+// ── 리포트 ────────────────────────────────────
+function goReport() {
+  location.href = `/report?user_id=${userId}&name=${encodeURIComponent(userName)}`;
+}
+
+// ── 음성 입력 ─────────────────────────────────
+let recognition = null, isRecording = false;
+function toggleVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('이 브라우저는 음성 인식을 지원하지 않습니다.'); return; }
+  if (isRecording) { recognition.stop(); return; }
+  recognition = new SR();
+  recognition.lang = 'ko-KR'; recognition.interimResults = false;
+  recognition.onstart = () => {
+    isRecording = true;
+    const btn = document.getElementById('voiceBtn');
+    btn.classList.add('recording'); btn.textContent = '⏹';
+  };
+  recognition.onresult = e => {
+    document.getElementById('msgInput').value = e.results[0][0].transcript;
+  };
+  recognition.onend = () => {
+    isRecording = false;
+    const btn = document.getElementById('voiceBtn');
+    btn.classList.remove('recording'); btn.textContent = '🎤';
+  };
+  recognition.start();
+}
+
+// ── 초기화 ────────────────────────────────────
+async function init() {
+  const session = await fetch(`/api/sessions/active/${userId}`).then(r => r.json());
+  if (session) updateBanner(session);
+  addMsg('bot', `${userName}님, 반갑습니다! 😊\n오늘도 편안하게 이야기 나눠요.`);
+}
+
+init();
+</script>
+</body>
+</html>

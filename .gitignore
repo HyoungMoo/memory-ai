@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.env
+
+# DB (개인 데이터 포함)
+*.db
+
+# IDE
+.vscode/
+.idea/

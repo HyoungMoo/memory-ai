@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>주간 리포트</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: #FFF8EE;
+      min-height: 100vh;
+      color: #3B2F2F;
+    }
+
+    /* ── 헤더 ── */
+    header {
+      background: white;
+      border-bottom: 2px solid #F0E6D8;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .back-link {
+      font-size: 1.6rem; color: #8C7B6B; text-decoration: none; padding: 4px;
+    }
+    .header-title { font-size: 1.15rem; font-weight: 700; }
+    .header-period { font-size: 0.9rem; color: #B0A090; margin-top: 2px; }
+
+    /* ── 내용 ── */
+    .wrap { padding: 20px 16px 48px; max-width: 540px; margin: 0 auto; }
+
+    /* ── 카드 ── */
+    .card {
+      background: white;
+      border: 2px solid #F0E6D8;
+      border-radius: 20px;
+      padding: 22px 20px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #3B2F2F;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* 대화 횟수 */
+    .big-stat { display: flex; align-items: center; gap: 20px; }
+    .big-num { font-size: 3rem; font-weight: 700; color: #D4875A; line-height: 1; }
+    .big-label { color: #8C7B6B; font-size: 1rem; margin-top: 4px; }
+    .activity-badge {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+    .b-great { background: #D1FAE5; color: #065F46; }
+    .b-ok    { background: #FEF3C7; color: #92400E; }
+    .b-low   { background: #FEE2E2; color: #991B1B; }
+
+    /* 정답률 */
+    .rate-big { font-size: 2.4rem; font-weight: 700; color: #7C3AED; line-height: 1; margin-bottom: 10px; }
+    .rate-sub { font-size: 0.95rem; color: #8C7B6B; margin-bottom: 14px; }
+    .rate-track { height: 14px; background: #F0E6D8; border-radius: 7px; overflow: hidden; }
+    .rate-fill  { height: 100%; border-radius: 7px; background: linear-gradient(90deg, #7C3AED, #A78BFA); transition: width 1s ease; }
+
+    /* 감정 목록 */
+    .emo-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 0; border-bottom: 1.5px solid #F5EDE0;
+    }
+    .emo-row:last-child { border-bottom: none; }
+    .emo-dot  { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+    .emo-name { font-size: 1.05rem; flex: 1; }
+    .emo-track { flex: 0 0 100px; height: 8px; background: #F0E6D8; border-radius: 4px; overflow: hidden; }
+    .emo-fill  { height: 100%; border-radius: 4px; }
+    .emo-cnt  { font-size: 0.9rem; color: #8C7B6B; flex: 0 0 36px; text-align: right; }
+
+    /* 도넛 차트 */
+    .donut-wrap { max-width: 280px; margin: 0 auto; }
+
+    /* 일별 */
+    .day-row { display: flex; align-items: flex-end; gap: 8px; height: 100px; padding-top: 10px; }
+    .day-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+    .day-bar { width: 100%; background: linear-gradient(180deg, #D4875A, #F0A070); border-radius: 6px 6px 0 0; min-height: 6px; }
+    .day-cnt { font-size: 0.8rem; color: #8C7B6B; }
+    .day-lbl { font-size: 0.82rem; color: #B0A090; }
+
+    /* 세션 태그 */
+    .tag-wrap { display: flex; flex-wrap: wrap; gap: 10px; }
+    .tag {
+      padding: 9px 18px; border-radius: 22px;
+      background: #EEF7EE; color: #2E7D32;
+      border: 1.5px solid #C8E6C9;
+      font-size: 0.95rem; font-weight: 500;
+    }
+
+    .empty { color: #C0B0A0; text-align: center; padding: 20px; font-size: 0.95rem; }
+
+    /* 돌아가기 버튼 */
+    .back-btn-big {
+      display: block; width: 100%;
+      padding: 18px;
+      text-align: center;
+      background: #D4875A;
+      color: white;
+      border: none;
+      border-radius: 16px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      font-family: 'Noto Sans KR', sans-serif;
+      cursor: pointer;
+      text-decoration: none;
+      margin-top: 8px;
+      transition: background .15s;
+    }
+    .back-btn-big:hover { background: #BE7048; }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="back-link" id="backLink" href="#">‹</a>
+  <div>
+    <div class="header-title" id="headerTitle">주간 리포트</div>
+    <div class="header-period" id="headerPeriod"></div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- 대화 횟수 -->
+  <div class="card">
+    <div class="card-title">💬 이번 주 대화 횟수</div>
+    <div class="big-stat">
+      <div>
+        <div class="big-num" id="chatCount">-</div>
+        <div class="big-label">번 대화하셨어요</div>
+        <span class="activity-badge" id="actBadge">-</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 기억 테스트 -->
+  <div class="card">
+    <div class="card-title">🧠 기억 테스트 결과</div>
+    <div class="rate-big" id="rateNum">-</div>
+    <div class="rate-sub" id="rateSub">아직 테스트 기록이 없어요</div>
+    <div class="rate-track"><div class="rate-fill" id="rateFill" style="width:0%"></div></div>
+  </div>
+
+  <!-- 감정 도넛 -->
+  <div class="card">
+    <div class="card-title">🌈 감정 분포</div>
+    <div class="donut-wrap"><canvas id="emotionChart"></canvas></div>
+  </div>
+
+  <!-- 감정 상세 -->
+  <div class="card">
+    <div class="card-title">📋 감정 상세</div>
+    <div id="emoDetail"><p class="empty">감정 데이터가 없어요</p></div>
+  </div>
+
+  <!-- 일별 대화 -->
+  <div class="card">
+    <div class="card-title">📅 날짜별 대화 횟수</div>
+    <div class="day-row" id="dayRow"><p class="empty" style="width:100%">대화 기록이 없어요</p></div>
+  </div>
+
+  <!-- 회상 세션 -->
+  <div class="card">
+    <div class="card-title">📚 이번 주 회상 주제</div>
+    <div class="tag-wrap" id="sessionTags"><p class="empty" style="width:100%">회상 세션 기록이 없어요</p></div>
+  </div>
+
+  <!-- 돌아가기 -->
+  <a class="back-btn-big" id="backBtnBig" href="#">← 대화하러 돌아가기</a>
+
+</div>
+
+<script>
+const params   = new URLSearchParams(location.search);
+const userId   = params.get('user_id');
+const userName = params.get('name') || '어르신';
+const chatUrl  = `/chat?user_id=${userId}&name=${encodeURIComponent(userName)}`;
+
+document.getElementById('headerTitle').textContent  = `${userName}님 주간 리포트`;
+document.getElementById('backLink').href            = chatUrl;
+document.getElementById('backBtnBig').href          = chatUrl;
+
+const today   = new Date();
+const weekAgo = new Date(today); weekAgo.setDate(today.getDate() - 6);
+const fmt = d => `${d.getMonth()+1}월 ${d.getDate()}일`;
+document.getElementById('headerPeriod').textContent = `${fmt(weekAgo)} ~ ${fmt(today)}`;
+
+const EMO_COLORS = {
+  '행복':'#FBBF24','슬픔':'#60A5FA','그리움':'#A78BFA',
+  '불안':'#F87171','평온':'#34D399','설렘':'#F472B6'
+};
+const CAT_LABELS = {
+  childhood:'🌱 유년기', school:'📖 학창시절',
+  career:'💼 직업·사회생활', family:'👨‍👩‍👧‍👦 결혼·가족', recent:'☀️ 최근 생활'
+};
+
+async function load() {
+  const d = await fetch(`/api/report/${userId}`).then(r => r.json());
+
+  // 대화 횟수
+  document.getElementById('chatCount').textContent = d.chat_count;
+  const badge = document.getElementById('actBadge');
+  badge.textContent = d.activity;
+  badge.className = 'activity-badge ' + (
+    ['매우 활발','활발'].includes(d.activity) ? 'b-great' :
+    d.activity === '보통' ? 'b-ok' : 'b-low'
+  );
+
+  // 기억 테스트
+  if (d.recall.total > 0) {
+    document.getElementById('rateNum').textContent = `${d.recall.rate}%`;
+    document.getElementById('rateSub').textContent = `총 ${d.recall.total}문제 중 ${d.recall.correct}개 정답`;
+    document.getElementById('rateFill').style.width = `${d.recall.rate}%`;
+  }
+
+  // 감정 차트
+  if (d.emotions.length) {
+    new Chart(document.getElementById('emotionChart'), {
+      type: 'doughnut',
+      data: {
+        labels: d.emotions.map(e => e.emotion),
+        datasets: [{
+          data: d.emotions.map(e => e.cnt),
+          backgroundColor: d.emotions.map(e => EMO_COLORS[e.emotion] || '#E5E7EB'),
+          borderWidth: 3, borderColor: '#FFF8EE'
+        }]
+      },
+      options: {
+        cutout: '60%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { font: { family: 'Noto Sans KR', size: 13 }, padding: 14 }
+          }
+        }
+      }
+    });
+
+    const max = Math.max(...d.emotions.map(e => e.cnt));
+    document.getElementById('emoDetail').innerHTML = d.emotions.map(e => `
+      <div class="emo-row">
+        <div class="emo-dot" style="background:${EMO_COLORS[e.emotion]||'#ccc'}"></div>
+        <span class="emo-name">${e.emotion}</span>
+        <div class="emo-track">
+          <div class="emo-fill" style="width:${Math.round(e.cnt/max*100)}%;background:${EMO_COLORS[e.emotion]||'#ccc'}"></div>
+        </div>
+        <span class="emo-cnt">${e.cnt}회</span>
+      </div>`).join('');
+  }
+
+  // 일별 대화
+  if (d.daily_chats.length) {
+    const max = Math.max(...d.daily_chats.map(x => x.cnt), 1);
+    document.getElementById('dayRow').innerHTML = d.daily_chats.map(x => `
+      <div class="day-col">
+        <span class="day-cnt">${x.cnt}</span>
+        <div class="day-bar" style="height:${Math.round(x.cnt/max*70)+8}px"></div>
+        <span class="day-lbl">${x.day.slice(5)}</span>
+      </div>`).join('');
+  }
+
+  // 세션 태그
+  if (d.session_counts.length) {
+    document.getElementById('sessionTags').innerHTML = d.session_counts.map(s => `
+      <span class="tag">${CAT_LABELS[s.category] || s.category} (${s.cnt}회)</span>`).join('');
+  }
+}
+
+load();
+</script>
+</body>
+</html>

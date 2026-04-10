@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>감정 통계</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: '맑은 고딕', sans-serif; background: #fdf6ec; min-height: 100vh; padding: 30px 20px; }
+    header { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+    header a { color: #5c3d2e; text-decoration: none; font-size: 1.3rem; }
+    header h1 { font-size: 1.3rem; color: #5c3d2e; }
+    .card { background: white; border-radius: 14px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
+    .card h2 { font-size: 1rem; color: #888; margin-bottom: 16px; }
+    .chart-wrap { max-width: 400px; margin: 0 auto; }
+    .memory-list { list-style: none; }
+    .memory-list li { padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 0.95rem; color: #444; display: flex; justify-content: space-between; align-items: center; }
+    .memory-list li:last-child { border-bottom: none; }
+    .badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; background: #f0e8df; color: #7a4f2e; }
+    .user-select { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+    .user-select select { padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; }
+    .user-select button { padding: 8px 18px; background: #c8956c; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; }
+    .empty { color: #bbb; text-align: center; padding: 20px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/">&#8592;</a>
+  <h1>감정 & 기억 통계</h1>
+</header>
+
+<div class="user-select">
+  <select id="userSelect"><option value="">사용자 선택...</option></select>
+  <button onclick="loadStats()">조회</button>
+</div>
+
+<div class="card">
+  <h2>감정 분포</h2>
+  <div class="chart-wrap">
+    <canvas id="emotionChart"></canvas>
+  </div>
+  <p class="empty" id="emotionEmpty" style="display:none">감정 데이터가 없습니다.</p>
+</div>
+
+<div class="card">
+  <h2>저장된 기억 목록</h2>
+  <ul class="memory-list" id="memoryList">
+    <li class="empty">사용자를 선택하세요.</li>
+  </ul>
+</div>
+
+<script>
+  const EMOTION_COLORS = {
+    '행복': '#ffc107', '슬픔': '#4e9af1', '그리움': '#9c6fce',
+    '불안': '#e05c5c', '평온': '#4caf7d', '설렘': '#f06292',
+  };
+
+  let chartInstance = null;
+
+  async function loadUsers() {
+    const res = await fetch('/api/users');
+    const users = await res.json();
+    const sel = document.getElementById('userSelect');
+    users.forEach(u => {
+      const opt = document.createElement('option');
+      opt.value = u.id;
+      opt.textContent = `${u.name} (${u.age}세)`;
+      sel.appendChild(opt);
+    });
+  }
+
+  async function loadStats() {
+    const userId = document.getElementById('userSelect').value;
+    if (!userId) return alert('사용자를 선택하세요.');
+
+    const [emotionRes, memoryRes] = await Promise.all([
+      fetch(`/api/emotions/${userId}`),
+      fetch(`/api/memories/${userId}`),
+    ]);
+
+    const emotions = await emotionRes.json();
+    const memories = await memoryRes.json();
+
+    renderEmotionChart(emotions);
+    renderMemories(memories);
+  }
+
+  function renderEmotionChart(data) {
+    const empty = document.getElementById('emotionEmpty');
+    if (!data.length) {
+      empty.style.display = 'block';
+      if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+      return;
+    }
+    empty.style.display = 'none';
+
+    const labels = data.map(d => d.emotion);
+    const counts = data.map(d => d.count);
+    const colors = labels.map(l => EMOTION_COLORS[l] || '#ccc');
+
+    if (chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(document.getElementById('emotionChart'), {
+      type: 'doughnut',
+      data: { labels, datasets: [{ data: counts, backgroundColor: colors, borderWidth: 2 }] },
+      options: {
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 13 } } },
+        },
+      },
+    });
+  }
+
+  function renderMemories(memories) {
+    const list = document.getElementById('memoryList');
+    if (!memories.length) {
+      list.innerHTML = '<li class="empty">저장된 기억이 없습니다.</li>';
+      return;
+    }
+    list.innerHTML = memories.map(m => `
+      <li>
+        <span>${m.content}</span>
+        ${m.emotion ? `<span class="badge">${m.emotion}</span>` : ''}
+      </li>
+    `).join('');
+  }
+
+  loadUsers();
+</script>
+</body>
+</html>
